@@ -511,6 +511,55 @@
         </div>
     </div>
 
+    <!-- VIEW 5: VISIT TRACKING (เยี่ยมชมการติดตาม) -->
+    <div id="view-data" class="view-section">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="w-1 h-5 bg-blue-500 rounded-full"></div>
+            <h2 class="text-sm font-bold text-gray-700">Visit Tracking <span class="text-gray-400 font-normal">(เยี่ยมชมการติดตาม)</span></h2>
+        </div>
+
+        <!-- Filter -->
+        <div class="bg-white border border-gray-200 rounded-xl p-3 shadow-sm mb-4">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] text-gray-500 block mb-1">พนักงาน</label>
+                    <select id="tracking-filter-person" class="w-full border border-gray-200 rounded-lg text-xs py-1.5 px-2 bg-white outline-none focus:border-blue-300" onchange="renderTracking()">
+                        <option value="">ทั้งหมด</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 block mb-1">เดือน</label>
+                    <select id="tracking-filter-month" class="w-full border border-gray-200 rounded-lg text-xs py-1.5 px-2 bg-white outline-none focus:border-blue-300" onchange="renderTracking()"></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-3 gap-2 mb-4" id="tracking-summary-cards">
+        </div>
+
+        <!-- Visit Timeline -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="bg-blue-50 border-b border-blue-100 px-3 py-2 flex items-center gap-2">
+                <i class="fas fa-route text-blue-500 text-sm"></i>
+                <span class="text-xs font-semibold text-blue-700">ประวัติการเข้าพบลูกค้า</span>
+            </div>
+            <div id="tracking-timeline" class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                <p class="text-xs text-gray-400 text-center py-6">กำลังโหลดข้อมูล...</p>
+            </div>
+        </div>
+
+        <!-- Company Visit Count -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="bg-emerald-50 border-b border-emerald-100 px-3 py-2 flex items-center gap-2">
+                <i class="fas fa-building text-emerald-500 text-sm"></i>
+                <span class="text-xs font-semibold text-emerald-700">สรุปจำนวนครั้งที่เข้าพบ (แยกบริษัท)</span>
+            </div>
+            <div id="tracking-company-list" class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            </div>
+        </div>
+    </div>
+
     <!-- BOTTOM NAVIGATION -->
     <div class="fixed bottom-0 w-full max-w-[480px] bg-white border-t border-gray-200 z-50 rounded-t-xl pb-safe">
         <div class="flex justify-around items-center p-2">
@@ -531,8 +580,8 @@
                 <span class="text-[10px] font-medium uppercase tracking-tighter">Approval</span>
             </button>
              <button onclick="switchTab('data')" id="nav-data" class="nav-btn flex flex-col items-center w-1/4 p-2 text-gray-400 hover:text-blue-500 transition-colors">
-                <i class="fas fa-chart-pie text-xl mb-1"></i>
-                <span class="text-[10px] font-medium uppercase tracking-tighter">Report</span>
+                <i class="fas fa-map-marked-alt text-xl mb-1"></i>
+                <span class="text-[10px] font-medium uppercase tracking-tighter">Tracking</span>
             </button>
         </div>
     </div>
@@ -649,6 +698,7 @@
         refreshTable(); 
         generateReport();
         generateApprovalList();
+        initTrackingFilters();
         
         if (typeof google !== 'undefined') {
             google.script.run.withSuccessHandler(r => { 
@@ -695,11 +745,12 @@
         document.getElementById(`view-${tabName}`).classList.add('active');
         document.getElementById(`nav-${tabName}`).classList.remove('text-gray-400');
         document.getElementById(`nav-${tabName}`).classList.add('text-blue-600');
-        const titles = { 'new': 'New Activity (บันทึกกิจกรรม)', 'detail': 'Activity Detail (รายละเอียดกิจกรรม)', 'report': 'Sales Report (รายงาน)', 'approval': 'Approval (ระบบอนุมัติ)' };
-        document.getElementById('header-title').innerText = titles[tabName];
+        const titles = { 'new': 'New Activity (บันทึกกิจกรรม)', 'detail': 'Activity Detail (รายละเอียดกิจกรรม)', 'report': 'Sales Report (รายงาน)', 'approval': 'Approval (ระบบอนุมัติ)', 'data': 'Visit Tracking (เยี่ยมชมการติดตาม)' };
+        document.getElementById('header-title').innerText = titles[tabName] || tabName;
         if(tabName === 'report') generateReport();
         if(tabName === 'detail') refreshTable();
         if(tabName === 'approval') generateApprovalList();
+        if(tabName === 'data') renderTracking();
     }
 
     function updateGasRate() {
@@ -1396,6 +1447,115 @@
                 <button type="button" onclick="toggleVisitDate('${d}')" class="text-orange-400 hover:text-orange-700 ml-0.5 leading-none">×</button>
             </span>`;
         }).join('');
+    }
+    // ===== Visit Tracking =====
+    function initTrackingFilters() {
+        const personSel = document.getElementById('tracking-filter-person');
+        const monthSel = document.getElementById('tracking-filter-month');
+        if (!personSel || !monthSel) return;
+
+        // พนักงาน
+        const persons = [...new Set(activities.map(a => a.salesperson).filter(Boolean))];
+        personSel.innerHTML = '<option value="">ทั้งหมด</option>' + persons.map(p => `<option value="${p}">${p}</option>`).join('');
+
+        // เดือน
+        const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        monthSel.innerHTML = thM.map((m, i) => {
+            const val = String(i + 1).padStart(2, '0');
+            const selected = val === String(new Date().getMonth() + 1).padStart(2, '0') ? 'selected' : '';
+            return `<option value="${val}" ${selected}>${m}</option>`;
+        }).join('');
+    }
+
+    function renderTracking() {
+        initTrackingFilters();
+        const filterPerson = document.getElementById('tracking-filter-person')?.value || '';
+        const filterMonth = document.getElementById('tracking-filter-month')?.value || '';
+
+        let filtered = activities.filter(a => {
+            const matchPerson = !filterPerson || a.salesperson === filterPerson;
+            const matchMonth = !filterMonth || (a.date && a.date.substring(5, 7) === filterMonth);
+            return matchPerson && matchMonth && a.inOut === 'OUT';
+        });
+
+        // Summary cards
+        const totalVisit = filtered.length;
+        const uniqueCompanies = new Set(filtered.map(a => a.companyName).filter(Boolean)).size;
+        const totalKm = filtered.reduce((s, a) => s + (parseFloat(a.distance) || 0), 0);
+        const cards = document.getElementById('tracking-summary-cards');
+        if (cards) {
+            cards.innerHTML = [
+                { icon: '🤝', label: 'เข้าพบทั้งหมด', val: totalVisit + ' ครั้ง', color: 'blue' },
+                { icon: '🏢', label: 'บริษัทที่เข้าพบ', val: uniqueCompanies + ' แห่ง', color: 'emerald' },
+                { icon: '🚗', label: 'ระยะทางรวม', val: totalKm.toLocaleString() + ' km', color: 'orange' },
+            ].map(c => `
+                <div class="bg-${c.color}-50 border border-${c.color}-100 rounded-xl p-2.5 text-center">
+                    <div class="text-lg mb-0.5">${c.icon}</div>
+                    <div class="text-xs font-bold text-${c.color}-700">${c.val}</div>
+                    <div class="text-[9px] text-${c.color}-500">${c.label}</div>
+                </div>`).join('');
+        }
+
+        // Timeline
+        const timeline = document.getElementById('tracking-timeline');
+        if (timeline) {
+            if (filtered.length === 0) {
+                timeline.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">ไม่มีข้อมูลในช่วงเวลานี้</p>';
+            } else {
+                const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date));
+                timeline.innerHTML = sorted.map(a => {
+                    const d = a.date ? a.date.split('-') : ['','',''];
+                    const dateLabel = d.length === 3 ? `${parseInt(d[2])}/${parseInt(d[1])}/${parseInt(d[0])+543}` : a.date;
+                    const typeColors = { 'เข้าพบลูกค้า':'blue', 'นำเสนอสินค้า':'orange', 'ประชุมโครงการ':'purple', 'สำรวจหน้างาน':'emerald', 'ติดตามงาน':'yellow', 'อื่น ๆ':'gray' };
+                    const col = typeColors[a.activityType] || 'gray';
+                    return `<div class="flex gap-2 px-3 py-2.5 hover:bg-gray-50">
+                        <div class="flex flex-col items-center">
+                            <div class="w-2 h-2 rounded-full bg-${col}-400 mt-1 flex-shrink-0"></div>
+                            <div class="w-px flex-1 bg-gray-200 mt-1"></div>
+                        </div>
+                        <div class="flex-1 min-w-0 pb-1">
+                            <div class="flex items-center justify-between gap-1 mb-0.5">
+                                <span class="text-[10px] font-bold text-gray-700 truncate">${a.companyName || '-'}</span>
+                                <span class="text-[9px] text-gray-400 flex-shrink-0">${dateLabel}</span>
+                            </div>
+                            <div class="flex items-center gap-1 flex-wrap">
+                                <span class="text-[9px] bg-${col}-100 text-${col}-700 px-1.5 py-0.5 rounded-full">${a.activityType}</span>
+                                ${a.customerType && a.customerType !== '-' ? `<span class="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">${a.customerType}</span>` : ''}
+                                ${a.salesperson ? `<span class="text-[9px] text-gray-400">${a.salesperson.split(' ')[0]}</span>` : ''}
+                            </div>
+                            ${a.contactName ? `<div class="text-[9px] text-gray-400 mt-0.5">👤 ${a.contactName}</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // Company visit count
+        const companyCount = {};
+        filtered.forEach(a => {
+            if (a.companyName) companyCount[a.companyName] = (companyCount[a.companyName] || 0) + 1;
+        });
+        const companyList = document.getElementById('tracking-company-list');
+        if (companyList) {
+            const sorted = Object.entries(companyCount).sort((a, b) => b[1] - a[1]);
+            if (sorted.length === 0) {
+                companyList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">ไม่มีข้อมูล</p>';
+            } else {
+                const max = sorted[0][1];
+                companyList.innerHTML = sorted.map(([name, count]) => {
+                    const pct = Math.round((count / max) * 100);
+                    return `<div class="px-3 py-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-medium text-gray-700 truncate flex-1 mr-2">${name}</span>
+                            <span class="text-[10px] font-bold text-emerald-600 flex-shrink-0">${count} ครั้ง</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5">
+                            <div class="bg-emerald-400 h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
     }
 </script>
 </body>
