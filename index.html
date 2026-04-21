@@ -117,7 +117,7 @@
                             <input type="date" id="date" required class="form-input !py-2 !text-sm" onchange="updateGasRate()">
                         </div>
                         <div>
-                            <label class="text-xs font-medium text-gray-500 mb-1 block">🔄 IN / OUT</label>
+                            <label class="text-xs font-medium text-gray-500 mb-1 block">🔄 Office Work / Client Visit</label>
                             <select id="inOut" required class="form-input bg-white !py-2 !text-sm">
                                 <option value="IN">Office Work</option>
                                 <option value="OUT" selected>Client Visit</option>
@@ -165,9 +165,7 @@
                                 <option value="ติดตามงาน">ติดตามงาน</option>
                                 <option value="งานเอกสารขาย">งานเอกสารขาย</option>
                                 <option value="อื่น ๆ">อื่น ๆ</option>
-                            <label class="text-xs font-medium text-gray-500 mb-1 block">📅 วันที่กิจกรรม</label>
-                            <input type="date" id="date" required class="form-input !py-2 !text-sm" onchange="updateGasRate()">
-                            
+
                             </select>
                         </div>
                         <div>
@@ -1241,7 +1239,11 @@
                                 img.classList.remove('hidden');
                                 img.src = result.value;
                             }
-                            Swal.fire({ icon: 'success', title: 'บันทึกลายเซ็นสำเร็จ!', showConfirmButton: false, timer: 1500 });
+                            
+                            // เพิ่มคำสั่งเรียกใช้งานฟังก์ชันส่งอีเมลหลังบันทึกลายเซ็นสำเร็จ
+                            google.script.run.sendSignatureNotification(type, yearVal, monthVal);
+
+                            Swal.fire({ icon: 'success', title: 'บันทึกลายเซ็นและแจ้งเตือนสำเร็จ!', showConfirmButton: false, timer: 2000 });
                         } else {
                             Swal.fire('Error', res.message, 'error');
                         }
