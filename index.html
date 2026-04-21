@@ -117,7 +117,7 @@
                             <input type="date" id="date" required class="form-input !py-2 !text-sm" onchange="updateGasRate()">
                         </div>
                         <div>
-                            <label class="text-xs font-medium text-gray-500 mb-1 block">🔄 สถานะ</label>
+                            <label class="text-xs font-medium text-gray-500 mb-1 block">🔄 IN / OUT</label>
                             <select id="inOut" required class="form-input bg-white !py-2 !text-sm">
                                 <option value="IN">Office Work</option>
                                 <option value="OUT" selected>Client Visit</option>
@@ -165,7 +165,9 @@
                                 <option value="ติดตามงาน">ติดตามงาน</option>
                                 <option value="งานเอกสารขาย">งานเอกสารขาย</option>
                                 <option value="อื่น ๆ">อื่น ๆ</option>
-
+                            <label class="text-xs font-medium text-gray-500 mb-1 block">📅 วันที่กิจกรรม</label>
+                            <input type="date" id="date" required class="form-input !py-2 !text-sm" onchange="updateGasRate()">
+                            
                             </select>
                         </div>
                         <div>
@@ -393,20 +395,26 @@
         <div class="space-y-4 mb-4">
             <!-- Bar Chart -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <h3 class="text-sm font-semibold text-gray-700 text-center mb-3"><i class="fas fa-car text-blue-500 mr-1"></i> เบิกค่าเดินทาง (แยกรายบุคคล)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 text-center mb-3">
+                    <i class="fas fa-car text-blue-500 mr-1"></i> เบิกค่าเดินทาง (แยกรายบุคคล)</h3>
+                    
                 <div class="relative h-48 w-full"><canvas id="barChart"></canvas></div>
             </div>
             
             <div class="grid grid-cols-2 gap-3">
                 <!-- Pie Chart -->
                 <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-sm font-semibold text-gray-700 text-center mb-2"><i class="fas fa-handshake text-orange-500 mr-1"></i> กิจกรรมการเข้าพบลูกค้า<br><span class="text-xs font-normal">(ครั้ง)</span></h3>
+                    <h3 class="text-sm font-semibold text-gray-700 text-center mb-2"><i class="fas fa-handshake text-orange-500 mr-1">
+                    </i> กิจกรรมการเข้าพบลูกค้า<br><span class="text-xs font-normal">(ครั้ง)</span></h3>
+
                     <div class="relative h-32 w-full"><canvas id="pieChart"></canvas></div>
                     <div id="pie-legend" class="mt-2 space-y-1"></div>
                 </div>
                 <!-- Doughnut Chart -->
                 <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-sm font-semibold text-gray-700 text-center mb-2"><i class="fas fa-users text-emerald-500 mr-1"></i> จำนวนลูกค้าที่เข้าพบ<br><span class="text-xs font-normal">(ราย)</span></h3>
+                    <h3 class="text-sm font-semibold text-gray-700 text-center mb-2"><i class="fas fa-users text-emerald-500 mr-1">
+                    </i> จำนวนลูกค้าที่เข้าพบ<br><span class="text-xs font-normal">(ราย)</span></h3>
+
                     <div class="relative h-32 w-full"><canvas id="doughnutChart"></canvas></div>
                     <div id="doughnut-legend" class="mt-2 space-y-1"></div>
                 </div>
@@ -521,6 +529,10 @@
             <button onclick="switchTab('approval')" id="nav-approval" class="nav-btn flex flex-col items-center w-1/4 p-2 text-gray-400 hover:text-blue-500 transition-colors relative">
                 <i class="fas fa-check-double text-xl mb-1"></i>
                 <span class="text-[10px] font-medium uppercase tracking-tighter">Approval</span>
+            </button>
+             <button onclick="switchTab('data')" id="nav-data" class="nav-btn flex flex-col items-center w-1/4 p-2 text-gray-400 hover:text-blue-500 transition-colors">
+                <i class="fas fa-chart-pie text-xl mb-1"></i>
+                <span class="text-[10px] font-medium uppercase tracking-tighter">Report</span>
             </button>
         </div>
     </div>
@@ -1239,11 +1251,7 @@
                                 img.classList.remove('hidden');
                                 img.src = result.value;
                             }
-                            
-                            // เพิ่มคำสั่งเรียกใช้งานฟังก์ชันส่งอีเมลหลังบันทึกลายเซ็นสำเร็จ
-                            google.script.run.sendSignatureNotification(type, yearVal, monthVal);
-
-                            Swal.fire({ icon: 'success', title: 'บันทึกลายเซ็นและแจ้งเตือนสำเร็จ!', showConfirmButton: false, timer: 2000 });
+                            Swal.fire({ icon: 'success', title: 'บันทึกลายเซ็นสำเร็จ!', showConfirmButton: false, timer: 1500 });
                         } else {
                             Swal.fire('Error', res.message, 'error');
                         }
